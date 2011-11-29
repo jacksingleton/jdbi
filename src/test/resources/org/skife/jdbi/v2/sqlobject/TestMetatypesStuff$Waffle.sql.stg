@@ -1,0 +1,6 @@
+group Waffle;
+
+
+save() ::= << insert into something (id, name) values (:id, :name) >>
+
+findAll() ::= << select id, name from something >>

@@ -31,7 +31,8 @@ class QueryHandler extends CustomizingStatementHandler
         super(sqlObjectType, method);
         this.method = method;
         this.magic = magic;
-        this.sql = SqlObject.getSql(method.getRawMember().getAnnotation(SqlQuery.class), method.getRawMember());
+        MetaAnnotatedMethod mam = new MetaAnnotatedMethod(method.getRawMember());
+        this.sql = SqlObject.getSql(mam.getAnnotation(SqlQuery.class), method.getRawMember());
     }
 
     public Object invoke(HandleDing h, Object target, Object[] args)

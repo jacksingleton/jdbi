@@ -49,14 +49,15 @@ class SqlObject implements InvocationHandler
         final Map<Method, Handler> handlers = new HashMap<Method, Handler>();
         for (final ResolvedMethod method : d.getMemberMethods()) {
             final Method raw_method = method.getRawMember();
+            MetaAnnotatedMethod mam = new MetaAnnotatedMethod(raw_method);
 
-            if (raw_method.isAnnotationPresent(SqlQuery.class)) {
+            if (mam.isAnnotationPresent(SqlQuery.class)) {
                 handlers.put(raw_method, new QueryHandler(sqlObjectType, method, ResultReturnThing.forType(method)));
             }
-            else if (raw_method.isAnnotationPresent(SqlUpdate.class)) {
+            else if (mam.isAnnotationPresent(SqlUpdate.class)) {
                 handlers.put(raw_method, new UpdateHandler(sqlObjectType, method));
             }
-            else if (raw_method.isAnnotationPresent(SqlBatch.class)) {
+            else if (mam.isAnnotationPresent(SqlBatch.class)) {
                 handlers.put(raw_method, new BatchHandler(sqlObjectType, method));
             }
             else if (method.getName().equals("close") && method.getRawMember().getParameterTypes().length == 0) {

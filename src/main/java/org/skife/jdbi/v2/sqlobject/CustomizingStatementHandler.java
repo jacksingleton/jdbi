@@ -24,8 +24,9 @@ abstract class CustomizingStatementHandler implements Handler
     {
         this.sqlObjectType = sqlObjectType;
         this.method = method.getRawMember();
+        MetaAnnotatedClass mac = new MetaAnnotatedClass(sqlObjectType);
+        for (final Annotation annotation : mac.getAnnotations()) {
 
-        for (final Annotation annotation : sqlObjectType.getAnnotations()) {
             if (annotation.annotationType().isAnnotationPresent(SqlStatementCustomizingAnnotation.class)) {
                 final SqlStatementCustomizingAnnotation a = annotation.annotationType()
                                                                       .getAnnotation(SqlStatementCustomizingAnnotation.class);
@@ -40,8 +41,8 @@ abstract class CustomizingStatementHandler implements Handler
             }
         }
 
-
-        final Annotation[] method_annotations = method.getRawMember().getAnnotations();
+        MetaAnnotatedMethod mam = new MetaAnnotatedMethod(method.getRawMember());
+        final Annotation[] method_annotations = mam.getAnnotations();
         for (final Annotation method_annotation : method_annotations) {
             final Class<? extends Annotation> m_anno_class = method_annotation.annotationType();
             if (m_anno_class.isAnnotationPresent(SqlStatementCustomizingAnnotation.class)) {
@@ -59,7 +60,7 @@ abstract class CustomizingStatementHandler implements Handler
 
         }
 
-        final Annotation[][] param_annotations = method.getRawMember().getParameterAnnotations();
+        final Annotation[][] param_annotations = mam.getParameterAnnotations();
         for (int param_idx = 0; param_idx < param_annotations.length; param_idx++) {
             final Annotation[] annotations = param_annotations[param_idx];
             for (final Annotation annotation : annotations) {
