@@ -38,19 +38,21 @@ class BatchHandler extends CustomizingStatementHandler
         // scope to least, that is: as an argument, then on the method, then on the class,
         // then default to Integer.MAX_VALUE
 
+        MetaAnnotatedMethod mam = new MetaAnnotatedMethod(raw_method);
+        MetaAnnotatedClass mac = new MetaAnnotatedClass(sqlObjectType);
         int index_of_batch_chunk_size_annotation_on_parameter;
         if ((index_of_batch_chunk_size_annotation_on_parameter = findBatchChunkSizeFromParam(raw_method)) >= 0) {
             return new ParamBasedChunkSizeFunction(index_of_batch_chunk_size_annotation_on_parameter);
         }
-        else if (raw_method.isAnnotationPresent(BatchChunkSize.class)) {
+        else if (mam.isAnnotationPresent(BatchChunkSize.class)) {
             final int size = raw_method.getAnnotation(BatchChunkSize.class).value();
             if (size <= 0) {
                 throw new IllegalArgumentException("Batch chunk size must be >= 0");
             }
             return new ConstantChunkSizeFunction(size);
         }
-        else if (sqlObjectType.isAnnotationPresent(BatchChunkSize.class)) {
-            final int size = BatchChunkSize.class.cast(sqlObjectType.getAnnotation(BatchChunkSize.class)).value();
+        else if (mac.isAnnotationPresent(BatchChunkSize.class)) {
+            final int size = BatchChunkSize.class.cast(mac.getAnnotation(BatchChunkSize.class)).value();
             return new ConstantChunkSizeFunction(size);
         }
         else {
@@ -60,7 +62,8 @@ class BatchHandler extends CustomizingStatementHandler
 
     private int findBatchChunkSizeFromParam(Method raw_method)
     {
-        Annotation[][] param_annos = raw_method.getParameterAnnotations();
+        MetaAnnotatedMethod mam = new MetaAnnotatedMethod(raw_method);
+        Annotation[][] param_annos = mam.getParameterAnnotations();
         for (int i = 0; i < param_annos.length; i++) {
             Annotation[] annos = param_annos[i];
             for (Annotation anno : annos) {

@@ -16,7 +16,8 @@ class UpdateHandler extends CustomizingStatementHandler
     {
         super(sqlObjectType, method);
         this.sql = SqlObject.getSql(method.getRawMember().getAnnotation(SqlUpdate.class), method.getRawMember());
-        if (method.getRawMember().isAnnotationPresent(GetGeneratedKeys.class)) {
+        MetaAnnotatedMethod mam = new MetaAnnotatedMethod(method.getRawMember());
+        if (mam.isAnnotationPresent(GetGeneratedKeys.class)) {
 
             final ResultReturnThing magic = ResultReturnThing.forType(method);
             final GetGeneratedKeys ggk = method.getRawMember().getAnnotation(GetGeneratedKeys.class);

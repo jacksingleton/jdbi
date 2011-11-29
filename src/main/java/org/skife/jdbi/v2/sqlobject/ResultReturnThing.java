@@ -17,10 +17,11 @@ abstract class ResultReturnThing
 {
     public Object map(ResolvedMethod method, Query q, HandleDing h)
     {
-        if (method.getRawMember().isAnnotationPresent(Mapper.class)) {
+        MetaAnnotatedMethod mam = new MetaAnnotatedMethod(method.getRawMember());
+        if (mam.isAnnotationPresent(Mapper.class)) {
             final ResultSetMapper mapper;
             try {
-                mapper = method.getRawMember().getAnnotation(Mapper.class).value().newInstance();
+                mapper = mam.getAnnotation(Mapper.class).value().newInstance();
             }
             catch (Exception e) {
                 throw new UnableToCreateStatementException("unable to access mapper", e);
@@ -61,7 +62,8 @@ abstract class ResultReturnThing
 
         public SingleValueResultReturnThing(ResolvedMethod method)
         {
-            if (method.getRawMember().isAnnotationPresent(SingleValueResult.class)) {
+            MetaAnnotatedMethod mam = new MetaAnnotatedMethod(method.getRawMember());
+            if (mam.isAnnotationPresent(SingleValueResult.class)) {
                 SingleValueResult svr = method.getRawMember().getAnnotation(SingleValueResult.class);
                 this.returnType = svr.value();
                 this.containerType = method.getReturnType().getErasedType();
