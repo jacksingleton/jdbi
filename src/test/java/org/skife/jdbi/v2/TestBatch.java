@@ -16,7 +16,12 @@
 
 package org.skife.jdbi.v2;
 
+import org.skife.jdbi.v2.util.StringMapper;
+
 import java.util.List;
+import java.util.Set;
+
+import static java.util.Arrays.asList;
 
 /**
  *
@@ -36,4 +41,20 @@ public class TestBatch extends DBITestCase
         List<Something> r = h.createQuery("select * from something order by id").map(Something.class).list();
         assertEquals(3, r.size());
     }
+
+    public void testApiExploration() throws Exception
+    {
+        Handle h = this.openHandle();
+        List<String> rs = h.createQuery("select name from something where id = :id")
+                           .bind("id", 7)
+                           .map(StringMapper.FIRST)
+                           .list();
+
+        List<Set<String>> rs2 = h.createBatchQuery("select name from something where id = :id")
+                                  .bind("id", asList(1, 2, 3, 4, 5))
+                                  .map(StringMapper.FIRST)
+                                  .list(Set.class);
+
+    }
+
 }
