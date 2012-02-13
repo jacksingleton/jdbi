@@ -39,7 +39,8 @@ public class TestBindExpression
     private DBI    dbi;
     private Handle handle;
 
-    @Before {
+    @Before
+    public void setUp() {
         dbi = new DBI("jdbc:h2:mem:test");
         handle = dbi.open();
         handle.execute("create table something( id integer primary key, name varchar(100) )");
@@ -60,6 +61,7 @@ public class TestBindExpression
         @SqlQuery("select id, name from something where name = :breakfast.waffle.topping limit 1")
         public Something findByBreakfast(@BindRoot("breakfast") Breakfast b);
     }
+
 
     @Test
     public void testExpression() throws Exception
