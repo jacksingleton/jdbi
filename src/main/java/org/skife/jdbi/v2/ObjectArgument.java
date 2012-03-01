@@ -36,11 +36,16 @@ class ObjectArgument implements Argument
 
     public void apply(int position, PreparedStatement statement, StatementContext ctx) throws SQLException
     {
-        if (value != null) {
-            statement.setObject(position, value);
+        if (value == null) {
+            statement.setNull(position, Types.OTHER);
+        }
+        else if (value.getClass().isEnum()) {
+            // In many cases object is the fallback, and we want to default to binding enums
+            // as strings
+            statement.setString(position, value.toString());
         }
         else {
-            statement.setNull(position, Types.OTHER);
+            statement.setObject(position, value);
         }
     }
 
