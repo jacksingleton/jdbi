@@ -77,7 +77,7 @@ abstract class ResultReturnThing
             try {
                 Fold.FoldSpec fs = this.spec.newInstance();
 
-                YetAnotherFoldInterfaceSheesh folder = fs.folder();
+                YetAnotherFoldInterface folder = fs.folder();
                 ResultIterator itty = q.iterator();
                 Object a = fs.initialValue();
                 try {

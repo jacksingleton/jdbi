@@ -69,9 +69,9 @@ public class TestFold
         }
 
         @Override
-        public YetAnotherFoldInterfaceSheesh<Map<String, Something>, Something> folder()
+        public YetAnotherFoldInterface<Map<String, Something>, Something> folder()
         {
-            return new YetAnotherFoldInterfaceSheesh<Map<String, Something>, Something>()
+            return new YetAnotherFoldInterface<Map<String, Something>, Something>()
             {
                 @Override
                 public Map<String, Something> fold(Map<String, Something> a, Something rs)

@@ -16,6 +16,6 @@ public @interface Fold
     {
         public A initialValue();
 
-        public YetAnotherFoldInterfaceSheesh<A, T> folder();
+        public YetAnotherFoldInterface<A, T> folder();
     }
 }
