@@ -1,7 +1,5 @@
 package org.skife.jdbi.v2.sqlobject;
 
-import org.skife.jdbi.v2.Folder3;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -18,6 +16,6 @@ public @interface Fold
     {
         public A initialValue();
 
-        public SemiFolder<A, T> folder();
+        public YetAnotherFoldInterfaceSheesh<A, T> folder();
     }
 }

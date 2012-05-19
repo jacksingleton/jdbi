@@ -3,8 +3,6 @@ package org.skife.jdbi.v2.sqlobject;
 import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.TypeResolver;
 import com.fasterxml.classmate.members.ResolvedMethod;
-import org.skife.jdbi.v2.FoldController;
-import org.skife.jdbi.v2.Folder3;
 import org.skife.jdbi.v2.Query;
 import org.skife.jdbi.v2.ResultBearing;
 import org.skife.jdbi.v2.ResultIterator;
@@ -79,7 +77,7 @@ abstract class ResultReturnThing
             try {
                 Fold.FoldSpec fs = this.spec.newInstance();
 
-                SemiFolder folder = fs.folder();
+                YetAnotherFoldInterfaceSheesh folder = fs.folder();
                 ResultIterator itty = q.iterator();
                 Object a = fs.initialValue();
                 try {
