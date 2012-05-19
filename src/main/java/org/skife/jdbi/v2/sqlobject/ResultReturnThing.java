@@ -1,10 +1,14 @@
 package org.skife.jdbi.v2.sqlobject;
 
 import com.fasterxml.classmate.ResolvedType;
+import com.fasterxml.classmate.TypeResolver;
 import com.fasterxml.classmate.members.ResolvedMethod;
+import org.skife.jdbi.v2.FoldController;
+import org.skife.jdbi.v2.Folder3;
 import org.skife.jdbi.v2.Query;
 import org.skife.jdbi.v2.ResultBearing;
 import org.skife.jdbi.v2.ResultIterator;
+import org.skife.jdbi.v2.exceptions.DBIException;
 import org.skife.jdbi.v2.exceptions.UnableToCreateStatementException;
 import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.sqlobject.customizers.SingleValueResult;
@@ -35,6 +39,9 @@ abstract class ResultReturnThing
     static ResultReturnThing forType(ResolvedMethod method)
     {
         ResolvedType return_type = method.getReturnType();
+        if (method.getRawMember().isAnnotationPresent(Fold.class)) {
+            return new FoldedReturnThing(method);
+        }
         if (return_type.isInstanceOf(ResultBearing.class)) {
             return new ResultBearingResultReturnThing(method);
         }
@@ -52,6 +59,51 @@ abstract class ResultReturnThing
     protected abstract Object result(ResultBearing q, HandleDing baton);
 
     protected abstract Class<?> mapTo(ResolvedMethod method);
+
+
+    static class FoldedReturnThing extends ResultReturnThing
+    {
+        private final Class<?> mapTo;
+        private final Class<? extends Fold.FoldSpec> spec;
+
+        public FoldedReturnThing(ResolvedMethod method)
+        {
+            this.spec = method.getRawMember().getAnnotation(Fold.class).value();
+            ResolvedType resolved = new TypeResolver().resolve(spec);
+            this.mapTo = resolved.typeParametersFor(Fold.FoldSpec.class).get(1).getErasedType();
+        }
+
+        @Override
+        protected Object result(ResultBearing q, HandleDing baton)
+        {
+            try {
+                Fold.FoldSpec fs = this.spec.newInstance();
+
+                SemiFolder folder = fs.folder();
+                ResultIterator itty = q.iterator();
+                Object a = fs.initialValue();
+                try {
+                    while (itty.hasNext()) {
+                        a = folder.fold(a, itty.next());
+                    }
+                }
+                finally {
+                    itty.close();
+                }
+                return a;
+
+            }
+            catch (Exception e) {
+                throw new DBIException("unable to traverse result set", e) {};
+            }
+        }
+
+        @Override
+        protected Class<?> mapTo(ResolvedMethod method)
+        {
+            return mapTo;
+        }
+    }
 
 
     static class SingleValueResultReturnThing extends ResultReturnThing
