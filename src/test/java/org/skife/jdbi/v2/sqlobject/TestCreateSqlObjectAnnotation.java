@@ -95,7 +95,8 @@ public class TestCreateSqlObjectAnnotation
         @Transaction
         public Something insertAndFind(int id, String name) {
             insert(id, name);
-            return createBar().findById(id);
+            Something s = createBar().findById(id);
+            return s;
         }
 
         @Transaction

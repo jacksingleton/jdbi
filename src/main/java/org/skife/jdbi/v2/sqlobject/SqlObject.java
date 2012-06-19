@@ -5,21 +5,25 @@ import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.ResolvedTypeWithMembers;
 import com.fasterxml.classmate.TypeResolver;
 import com.fasterxml.classmate.members.ResolvedMethod;
-import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.Factory;
-import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
+import org.apache.tapestry5.internal.plastic.StandardDelegate;
+import org.apache.tapestry5.plastic.ClassInstantiator;
+import org.apache.tapestry5.plastic.PlasticClass;
+import org.apache.tapestry5.plastic.PlasticClassTransformer;
+import org.apache.tapestry5.plastic.PlasticManager;
+import org.apache.tapestry5.plastic.PlasticMethod;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 class SqlObject
 {
+    private static final PlasticManager pm = PlasticManager.withContextClassLoader().create();
+
     private static final TypeResolver                                  typeResolver  = new TypeResolver();
     private static final Map<Method, Handler>                          mixinHandlers = new HashMap<Method, Handler>();
     private static final ConcurrentMap<Class<?>, Map<Method, Handler>> handlersCache = new ConcurrentHashMap<Class<?>, Map<Method, Handler>>();
@@ -34,44 +38,69 @@ class SqlObject
     @SuppressWarnings("unchecked")
     static <T> T buildSqlObject(final Class<T> sqlObjectType, final HandleDing handle)
     {
-        Factory f;
-        if (factories.containsKey(sqlObjectType)) {
-            f = factories.get(sqlObjectType);
-        }
-        else {
-            Enhancer e = new Enhancer();
-            List<Class> interfaces = new ArrayList<Class>();
-            interfaces.add(CloseInternal.class);
-            if (sqlObjectType.isInterface()) {
-                interfaces.add(sqlObjectType);
-            }
-            else {
-                e.setSuperclass(sqlObjectType);
-            }
-            e.setInterfaces(interfaces.toArray(new Class[interfaces.size()]));
-            final SqlObject so = new SqlObject(buildHandlersFor(sqlObjectType), handle);
-            e.setCallback(new MethodInterceptor()
-            {
-                @Override
-                public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable
-                {
-                    return so.invoke(o, method, objects, methodProxy);
-                }
-            });
-            T t = (T) e.create();
-            factories.putIfAbsent(sqlObjectType, (Factory) t);
-            return t;
-        }
+        final Class parent = sqlObjectType.isInterface() ? Object.class : sqlObjectType;
 
-        final SqlObject so = new SqlObject(buildHandlersFor(sqlObjectType), handle);
-        return (T) f.newInstance(new MethodInterceptor()
+        ClassInstantiator<Object> pci = pm.createClass(parent, new StandardDelegate(new PlasticClassTransformer()
         {
             @Override
-            public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable
+            public void transform(PlasticClass pc)
             {
-                return so.invoke(o, method, objects, methodProxy);
+                if (sqlObjectType.isInterface()) {
+                    pc.introduceInterface(sqlObjectType);
+                }
+
+                final MemberResolver mr = new MemberResolver(typeResolver);
+                final ResolvedType sql_object_type = typeResolver.resolve(sqlObjectType);
+                final ResolvedTypeWithMembers d = mr.resolve(sql_object_type, null, null);
+
+                for (ResolvedMethod method : d.getMemberMethods()) {
+                    final Method raw_method = method.getRawMember();
+
+                    if (raw_method.isAnnotationPresent(SqlQuery.class)) {
+                        pc.introduceMethod(raw_method)
+                          .addAdvice(new QueryAdvice(sqlObjectType, method, ResultReturnThing.forType(method)));
+                    }
+                    else if (raw_method.isAnnotationPresent(SqlUpdate.class)) {
+                        pc.introduceMethod(raw_method)
+                          .addAdvice(new UpdateAdvice(sqlObjectType, method));
+                    }
+                    else if (raw_method.isAnnotationPresent(SqlBatch.class)) {
+                        pc.introduceMethod(raw_method)
+                          .addAdvice(new BatchAdvice(sqlObjectType, method));
+                    }
+                    else if (raw_method.isAnnotationPresent(SqlCall.class)) {
+                        pc.introduceMethod(raw_method)
+                          .addAdvice(new CallAdvice(sqlObjectType, method));
+                    }
+                    else if (raw_method.isAnnotationPresent(CreateSqlObject.class)) {
+                        pc.introduceMethod(raw_method)
+                          .addAdvice(new CreateSqlObjectAdvice(raw_method.getReturnType()));
+                    }
+                    else if (method.getName().equals("close") && raw_method.getParameterTypes().length == 0) {
+                        pc.introduceMethod(raw_method)
+                          .addAdvice(new CloseAdvice());
+
+                    }
+                    else if (raw_method.isAnnotationPresent(Transaction.class)) {
+                        pc.introduceMethod(raw_method)
+                          .addAdvice(new TransactionAdvice(raw_method.getAnnotation(Transaction.class)));
+                    }
+                    else if (mixinHandlers.containsKey(raw_method)) {
+                        //handlers.put(raw_method, mixinHandlers.get(raw_method));
+                    }
+                    else {
+                        //handlers.put(raw_method, new PassThroughHandler(raw_method));
+                    }
+
+//                    for (PlasticMethod plasticMethod : pc.getMethodsWithAnnotation(Transaction.class)) {
+//                        plasticMethod.addAdvice(new TransactionAdvice(plasticMethod.getAnnotation(Transaction.class)));
+//                    }
+
+                }
             }
-        });
+        }));
+
+        return (T) pci.with(HandleDing.class, handle).newInstance();
     }
 
     private static Map<Method, Handler> buildHandlersFor(Class<?> sqlObjectType)
@@ -101,7 +130,7 @@ class SqlObject
             else if (raw_method.isAnnotationPresent(SqlCall.class)) {
                 handlers.put(raw_method, new CallHandler(sqlObjectType, method));
             }
-            else if(raw_method.isAnnotationPresent(CreateSqlObject.class)) {
+            else if (raw_method.isAnnotationPresent(CreateSqlObject.class)) {
                 handlers.put(raw_method, new CreateSqlObjectHandler(raw_method.getReturnType()));
             }
             else if (method.getName().equals("close") && method.getRawMember().getParameterTypes().length == 0) {
