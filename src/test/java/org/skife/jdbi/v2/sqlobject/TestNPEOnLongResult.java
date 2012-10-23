@@ -37,18 +37,18 @@ public class TestNPEOnLongResult
     }
 
     @Test
-    public void testFoo() throws Exception
+    public void testAgainstH2() throws Exception
     {
         Dao dao = handle.attach(Dao.class);
         assertThat(dao.findByIdName("Brian"), nullValue());
     }
 
     @Test
-    public void testAgainstPostgresql() throws Exception
+    public void testAgainstPostgres() throws Exception
     {
         PGSimpleDataSource ds = new PGSimpleDataSource();
         ds.setServerName("localhost");
-        ds.setDatabaseName("brianm");
+        ds.setDatabaseName("jdbi-testing");
 
         DBI dbi = new DBI(ds);
         Handle h = dbi.open();
