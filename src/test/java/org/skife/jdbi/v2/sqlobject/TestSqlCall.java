@@ -50,7 +50,7 @@ public class TestSqlCall
     }
 
     @Test
-    public void testFoo() throws Exception
+    public void testWithNoOutParams() throws Exception
     {
         Dao dao = handle.attach(Dao.class);
 //        OutParameters out = handle.createCall(":num = call stored_insert(:id, :name)")
@@ -63,10 +63,20 @@ public class TestSqlCall
         assertThat(handle.attach(Dao.class).findById(1), equalTo(new Something(1, "Jeff")));
     }
 
+    @Test
+    public void testWithOutParemeters() throws Exception {
+        Dao dao = handle.attach(Dao.class);
+        OutParameters out = dao.insertWithOut(1, "Sathish");
+        assertThat(out.getInt("num"), equalTo(1));
+    }
+
     public static interface Dao
     {
         @SqlCall("call stored_insert(:id, :name)")
         public void insert(@Bind("id") int id, @Bind("name") String name);
+
+        @SqlCall(":num = call stored_insert(:id, :name)")
+        public OutParameters insertWithOut(@Bind("id") int id, @Bind("name") String name);
 
         @SqlQuery("select id, name from something where id = :id")
         @RegisterMapper(SomethingMapper.class)
